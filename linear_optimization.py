@@ -52,9 +52,9 @@ class Optimizer:
             lhs = pulp.lpSum([coef_rest[j] * new_vars[j] for j in range(self.num_variables)])
             if i == constr_index:
                 rhs += delta_b
-            if sense == '<=':
+            if sense == '<':
                 new_model += lhs <= rhs, name
-            elif sense == '>=':
+            elif sense == '>':
                 new_model += lhs >= rhs, name
             else:
                 new_model += lhs == rhs, name
