@@ -73,6 +73,7 @@ for i in range(st.session_state.num_restrs):
 
 # Botão Calcular
 if st.button("Calcular Otimização", type="primary", use_container_width=True):
+
     optimizer = Optimizer(num_vars)
     coef_fo = [st.session_state[f"c_{i}"] for i in range(num_vars)]
     optimizer.set_objective_function(coef_fo)
@@ -85,6 +86,7 @@ if st.button("Calcular Otimização", type="primary", use_container_width=True):
 
     resultados = optimizer.solve()
     st.session_state.resultados = resultados
+    st.session_state.optimizer = optimizer  # <-- ESSENCIAL
     st.session_state.show_results = True
 
 # Resultados
@@ -115,3 +117,21 @@ if st.session_state.get('show_results', False):
             for i in range(num_restrs):
                 ps = st.session_state.resultados["precos_sombra"][i]
                 st.metric(label=f"PS (R{i+1})", value=f"{ps:.2f}")
+    st.markdown("---")
+    st.markdown('<div class="section-header red-header"><h4>Análise de Aumento de Recurso (Delta)</h4></div>',
+                unsafe_allow_html=True)
+
+    constr_to_increase = st.selectbox("Selecione a restrição para aumentar",
+                                      options=[f"R{i + 1}" for i in range(num_restrs)])
+    delta_val = st.number_input("Quanto deseja aumentar o recurso?", min_value=0.0, format="%.2f")
+
+    if st.button("Simular aumento de recurso"):
+        constr_index = int(constr_to_increase[1:]) - 1
+        optimizer = st.session_state.optimizer
+        delta_result = optimizer.analyze_delta(constr_index, delta_val)
+        st.metric("Novo Valor Objetivo Estimado", f"{delta_result['novo_valor_objetivo']:.2f}")
+        st.metric("Melhora no Lucro", f"{delta_result['melhora']:.2f}")
+        if delta_result["pode_aumentar"]:
+            st.success("Aumento viável e traz melhora.")
+        else:
+            st.warning("Aumento pode não ser viável ou não traz melhora.")
