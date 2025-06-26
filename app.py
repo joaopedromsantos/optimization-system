@@ -74,7 +74,7 @@ for i in range(st.session_state.num_restrs):
         st.divider()
         col1, col2 = st.columns(2)
         with col1:
-            st.selectbox("Operador", ["<=", ">=", "=="], key=f"op_{i}")
+            st.selectbox("Operador", ["<=", ">="], key=f"op_{i}")
         with col2:
             st.number_input("Lado Direito (LD)", key=f"b_{i}", format="%.2f", value=0.0)
 
@@ -158,7 +158,7 @@ if st.session_state.get('show_results', False):
 
     constr_to_increase = st.selectbox("Selecione a restrição para aumentar",
                                       options=[f"R{i + 1}" for i in range(num_restrs)])
-    delta_val = st.number_input("Quanto deseja aumentar o recurso?", min_value=0.0, format="%.2f")
+    delta_val = st.number_input("Quanto deseja aumentar o recurso?", format="%.2f")
 
     if st.button("Simular aumento de recurso"):
         constr_index = int(constr_to_increase[1:]) - 1
