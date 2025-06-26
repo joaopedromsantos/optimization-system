@@ -1,5 +1,5 @@
-
 import streamlit as st
+from pulp import LpStatusOptimal, LpStatusInfeasible, LpStatusUnbounded, LpStatusUndefined, LpMaximize, LpMinimize
 from linear_optimization import Optimizer
 
 # --- Configuração da Página ---
@@ -38,14 +38,21 @@ if 'num_vars' not in st.session_state:
 if 'num_restrs' not in st.session_state:
     st.session_state.num_restrs = 2
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 with col1:
     num_vars = st.number_input("Número de Variáveis", min_value=2, key="num_vars")
 with col2:
     num_restrs = st.number_input("Número de Restrições", min_value=1, key="num_restrs")
+with col3:
+    st.radio(
+        "Tipo de Otimização",
+        ["Maximizar", "Minimizar"],
+        key="objective_sense",
+        horizontal=True, # Deixa os botões lado a lado
+    )
 
 # Função Objetivo
-st.markdown('<div class="section-header green-header"><h4>Função Objetivo (Maximização)</h4></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="section-header green-header"><h4>Função Objetivo ({st.session_state.objective_sense})</h4></div>', unsafe_allow_html=True)
 with st.container(border=True):
     cols_fo = st.columns(st.session_state.num_vars)
     variable_names = []
@@ -73,8 +80,14 @@ for i in range(st.session_state.num_restrs):
 
 # Botão Calcular
 if st.button("Calcular Otimização", type="primary", use_container_width=True):
+    sense_map = {
+        "Maximizar": LpMaximize,
+        "Minimizar": LpMinimize
+    }
+    selected_sense = sense_map[st.session_state.objective_sense]
 
-    optimizer = Optimizer(num_vars)
+    optimizer = Optimizer(num_vars, sense=selected_sense)
+
     coef_fo = [st.session_state[f"c_{i}"] for i in range(num_vars)]
     optimizer.set_objective_function(coef_fo)
 
@@ -105,11 +118,33 @@ if st.session_state.get('show_results', False):
                 st.metric(label=f"{var_name}*", value=f"{val:.2f}")
 
     with col2:
-        with st.container(border=True):
-            st.subheader("Valor Ótimo (Z*)")
-            z = st.session_state.resultados["valor_objetivo"]
-            st.metric(label="Z*", value=f"{z:.2f}")
-            st.success("Solução Viável")
+        resultados = st.session_state.get("resultados", None)
+
+        if resultados:
+            status = resultados["viavel"]
+
+            # Exibe o Valor Ótimo (Z*) apenas se a solução for ótima
+            if status == LpStatusOptimal:
+                with st.container(border=True):
+                    st.subheader("Valor Ótimo (Z*)")
+                    z = resultados["valor_objetivo"]
+                    st.metric(label="Z*", value=f"{z:.2f}")
+
+            # Exibe a mensagem de STATUS correspondente
+            with st.container(border=True):
+                st.subheader("Status da Solução")
+
+                if status == LpStatusOptimal:
+                    st.success("Solução Viável")
+
+                elif status == LpStatusInfeasible:
+                    st.error("Solução Inviável")
+
+                elif status == LpStatusUnbounded:
+                    st.warning("Solução Ilimitada")
+
+                elif status == LpStatusUndefined:
+                    st.error("Solução Indefinida")
 
     with col3:
         with st.container(border=True):

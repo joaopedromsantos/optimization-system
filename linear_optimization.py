@@ -2,9 +2,9 @@ import pulp
 
 class Optimizer:
 
-    def __init__(self, num_variables):
+    def __init__(self, num_variables, sense=pulp.LpMaximize):
         self.num_variables = num_variables
-        self.model = pulp.LpProblem("Maximizar_Z", pulp.LpMaximize)
+        self.model = pulp.LpProblem("Maximizar_Z", sense)
         self.variables = [pulp.LpVariable(f'x{i + 1}', lowBound=0, cat='Continuous')
                           for i in range(num_variables)]
         self.coef_fo = None
@@ -30,10 +30,12 @@ class Optimizer:
         valores_otimos = [v.varValue for v in self.variables]
         valor_objetivo = pulp.value(self.model.objective)
         precos_sombra = [c.pi for c in self.model.constraints.values()]
+        viavel = self.model.status
         return {
             "valores_otimos": valores_otimos,
             "valor_objetivo": valor_objetivo,
-            "precos_sombra": precos_sombra
+            "precos_sombra": precos_sombra,
+            "viavel": viavel
         }
 
     def analyze_delta(self, constr_index, delta_b):
